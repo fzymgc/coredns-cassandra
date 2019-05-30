@@ -13,7 +13,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	cassandraTest = newCassandraPlugin("localhost", "fortify_dns")
+	cassandraTest = newCassandraPlugin("localhost", "zones")
 	os.Exit(m.Run())
 }
 

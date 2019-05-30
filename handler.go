@@ -6,6 +6,7 @@ import (
 	"github.com/coredns/coredns/request"
 	"github.com/gocql/gocql"
 	"github.com/miekg/dns"
+	"strings"
 )
 
 func newCassandraPlugin(conn, keyspace string) *Cassandra {
@@ -32,7 +33,7 @@ func (c *Cassandra) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 		return plugin.NextOrFailure(qname, c.Next, ctx, w, r)
 	}
 
-	host := dns.SplitDomainName(qname)[0]
+	host := dns.Fqdn(parseHostFromQname(qname, zone))
 	var answers []dns.RR
 	var extras []dns.RR
 	var err error
@@ -63,3 +64,11 @@ func (c *Cassandra) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.M
 }
 
 func (c *Cassandra) Name() string { return "cassandra" }
+
+func parseHostFromQname(qname, zone string) string {
+	qTokens := dns.SplitDomainName(qname)
+	zTokens := dns.SplitDomainName(zone)
+
+	length := len(qTokens) - len(zTokens)
+	return strings.Join(qTokens[0:length], ".")
+}
