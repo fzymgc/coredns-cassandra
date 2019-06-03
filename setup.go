@@ -14,7 +14,10 @@ func init() {
 }
 
 func setup(c *caddy.Controller) error {
-	k := newCassandraPlugin("127.0.0.1", "zones") // This is currently hard-coded.  Add as a config option in CoreDNS.
+	// This is currently hard-coded.  Need to pull this from a configuration somwhere (Corefile; env?)
+	hosts := []string{"127.0.0.1"}
+	db := NewCassandraDatastore(hosts, "zones")
+	k := NewCassandraPlugin(db)
 
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
 		k.Next = next

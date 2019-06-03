@@ -1,127 +1,65 @@
 package cassandra
 
 import (
-	"github.com/coredns/coredns/request"
-	"github.com/scylladb/gocqlx/qb"
-	"log"
-
+	"context"
 	"github.com/coredns/coredns/plugin"
-	"github.com/gocql/gocql"
+	"github.com/coredns/coredns/request"
 	"github.com/miekg/dns"
-	"github.com/scylladb/gocqlx"
 )
 
 type Cassandra struct {
-	Next    plugin.Handler
-	cluster *gocql.ClusterConfig
-
-	allowTransfers bool
+	Next plugin.Handler
+	db   CassandraBackend
 }
 
-func (c *Cassandra) GetRecords(zone string, host string, qtype uint16, class uint16) ([]dns.RR, []dns.RR, error) {
-	session, _ := c.cluster.CreateSession()
-	defer session.Close()
+func NewCassandraPlugin(db CassandraBackend) *Cassandra {
+	return &Cassandra{
+		db: db,
+	}
+}
 
+func (c *Cassandra) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
+	state := request.Request{W: w, Req: r}
+	db := c.db
+
+	qname := state.Name()
+	qtype := state.QType()
+	qclass := state.QClass()
+
+	zone := plugin.Zones(db.Zones()).Matches(qname)
+
+	if zone == "" {
+		return plugin.NextOrFailure(qname, c.Next, ctx, w, r)
+	}
+
+	host := ParseHostFromQname(qname, zone)
 	var answers []dns.RR
 	var extras []dns.RR
+	var err error
 
-	var records []string
-	stmt, names := qb.Select("rr").Where(qb.Eq("zone"), qb.Eq("name"), qb.Eq("rrtype"), qb.Eq("class")).Columns("rdata").ToCql()
+	switch qtype {
+	case dns.TypeAXFR, dns.TypeIXFR:
+		return errorResponse(state, zone, dns.RcodeNotImplemented, err)
 
-	qMap := qb.M{
-		"zone":   zone,
-		"name":   host,
-		"rrtype": qtype,
-		"class":  class,
-	}
-	q := gocqlx.Query(session.Query(stmt), names).BindMap(qMap)
-	log.Println(q.String())
-	if err := q.SelectRelease(&records); err != nil {
-		return nil, nil, err
-	}
-
-	for _, result := range records {
-		rr, err := dns.NewRR(result)
+	default:
+		//answers, extras, err := c.GetRecords(zone, host, qtype)
+		answers, extras, err = db.GetRecords(zone, host, qtype, qclass)
 		if err != nil {
-			log.Println(err)
-			break
+			// Handle some error here
 		}
-		answers = append(answers, rr)
 	}
 
-	return answers, extras, nil
-}
-
-// Zones returns a list of all zones in Cassandra.  If no zones exist, returns an empty slice.
-func (c *Cassandra) Zones() []string {
-	session, _ := c.cluster.CreateSession()
-	defer session.Close()
-
-	iter := session.Query("SELECT zone FROM soa").Iter()
-	zones := make([]string, 0, iter.NumRows())
-	var zone string
-	for iter.Scan(&zone) {
-		zones = append(zones, zone)
-	}
-	return zones
-}
-
-// CreateZone will add a new zone SOA to the database.
-func (c *Cassandra) CreateZone(name string) error {
-	session, _ := c.cluster.CreateSession()
-	defer session.Close()
-
-	soa := qb.M{
-		"zone":    name,
-		"ns":      "localhost.",
-		"mbox":    "localhost.",
-		"serial":  1,
-		"refresh": 86400,
-		"retry":   7200,
-		"expire":  3600,
-		"minttl":  300,
-	}
-
-	stmt, names := qb.Insert("soa").Columns("zone", "ns", "mbox", "serial", "refresh", "retry", "expire", "minttl").ToCql()
-	err := gocqlx.Query(session.Query(stmt), names).BindMap(soa).ExecRelease()
-	return err
-}
-
-func (c *Cassandra) InsertRecord(zone string, rr dns.RR) error {
-	session, _ := c.cluster.CreateSession()
-	defer session.Close()
-
-	uuid, err := gocql.RandomUUID()
-	if err != nil {
-		return err
-	}
-
-	header := rr.Header()
-	rdata := rr.String()
-
-	rrMap := qb.M{
-		"id":     uuid,
-		"zone":   zone,
-		"name":   header.Name,
-		"rrtype": header.Rrtype,
-		"class":  header.Class,
-		"rdata":  rdata,
-	}
-
-	//stmt, names := qb.Insert("rr").Columns("id", "zone", "name", "rrtype", "class", "ttl").ToCql()
-	stmt, names := qb.Insert("rr").Columns("id", "zone", "name", "rrtype", "class", "rdata").ToCql()
-	err = gocqlx.Query(session.Query(stmt), names).BindMap(rrMap).ExecRelease()
-
-	return err
-}
-
-func errorResponse(state request.Request, zone string, rcode int, err error) (int, error) {
 	m := new(dns.Msg)
-	m.SetRcode(state.Req, rcode)
+	m.SetReply(r)
 	m.Authoritative, m.RecursionAvailable, m.Compress = true, false, true
 
+	m.Answer = append(m.Answer, answers...)
+	m.Extra = append(m.Extra, extras...)
+
 	state.SizeAndDo(m)
-	_ = state.W.WriteMsg(m)
-	// Return success as the rcode to signal we have written to the client.
-	return dns.RcodeSuccess, err
+	m = state.Scrub(m)
+	_ = w.WriteMsg(m)
+	return dns.RcodeSuccess, nil
 }
+
+func (c *Cassandra) Name() string { return "cassandra" }
