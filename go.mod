@@ -1,4 +1,4 @@
-module github.com/fzymgc/cassandra
+module github.com/fzymgc/coredns-cassandra
 
 go 1.13
 

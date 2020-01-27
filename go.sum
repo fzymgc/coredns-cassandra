@@ -143,7 +143,6 @@ github.com/go-logfmt/logfmt v0.4.0 h1:MP4Eh7ZCb31lleYCFuwm0oe4/YGak+5l1vA2NOE80n
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logr/logr v0.1.0/go.mod h1:ixOQHD9gLJUVQQ2ZOR7zLEifBX6tGkNJF4QyIY7sIas=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
-github.com/gocql/gocql v0.0.0-20190423091413-b99afaf3b163/go.mod h1:4Fw1eo5iaEhDUs8XyuhSVCVy52Jq3L+/3GJgYkwc+/0=
 github.com/gocql/gocql v0.0.0-20200103014340-68f928edb90a/go.mod h1:DL0ekTmBSTdlNF25Orwt/JMzqIq3EJ4MVa/J/uK64OY=
 github.com/gocql/gocql v0.0.0-20200121121104-95d072f1b5bb h1:gAHg4RMULuLo7Y3jhY5CHh/QuSwjeTZt4qVdJ9ytcVI=
 github.com/gocql/gocql v0.0.0-20200121121104-95d072f1b5bb/go.mod h1:DL0ekTmBSTdlNF25Orwt/JMzqIq3EJ4MVa/J/uK64OY=
@@ -349,8 +348,6 @@ github.com/sacloud/libsacloud v1.26.1/go.mod h1:79ZwATmHLIFZIMd7sxA3LwzVy/B77uj3
 github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
 github.com/scylladb/go-reflectx v1.0.1 h1:b917wZM7189pZdlND9PbIJ6NQxfDPfBvUaQ7cjj1iZQ=
 github.com/scylladb/go-reflectx v1.0.1/go.mod h1:rWnOfDIRWBGN0miMLIcoPt/Dhi2doCMZqwMCJ3KupFc=
-github.com/scylladb/gocqlx v1.3.0 h1:PKbWHoRAB2+sgVwKhhFTYwlDdXhFzvMZdQc0JMolLMs=
-github.com/scylladb/gocqlx v1.3.0/go.mod h1:1CisD8Z+VB7ByxGyc3B9OXusRNgWWtCMkO+hNCpgZAc=
 github.com/scylladb/gocqlx v1.3.3 h1:p4R6sDDPvkmIMBlomKw+WyGmQc7o9LM3JlFDtcT+PoM=
 github.com/scylladb/gocqlx v1.3.3/go.mod h1:g+GaoDa4O9T/THP3z1TdA589P7ZyxVm+/Zj897g6DUc=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
