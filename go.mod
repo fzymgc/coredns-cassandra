@@ -1,4 +1,4 @@
-module github.com/NullOranje/cassandra
+module github.com/fzymgc/cassandra
 
 go 1.13
 
