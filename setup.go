@@ -75,9 +75,13 @@ func parse(c *caddy.Controller) (cassandra *Cassandra, err error) {
 						return nil, c.Errf("unknown property '%s'", c.Val())
 					}
 				}
+				if !c.Next() {
+					break
+				}
 			}
 		}
 	}
 	cass.Connect()
+	cass.LoadZones()
 	return cass, nil
 }
