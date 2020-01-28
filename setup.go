@@ -32,6 +32,7 @@ func setup(c *caddy.Controller) error {
 	}
 
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
+		clog.Debug("plugin handler registered")
 		cass.Next = next
 		return cass
 	})

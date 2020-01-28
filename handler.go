@@ -15,6 +15,7 @@ func (cass *Cassandra) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dn
 
 	qname := state.Name()
 	qtype := state.QType()
+	clog.Infof("ServeDNS: qname=%s, qtype=%s",qname, qtype)
 
 	if time.Since(cass.LastZoneUpdate) > zoneUpdateTime {
 		cass.LoadZones()
@@ -26,8 +27,8 @@ func (cass *Cassandra) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dn
 		return plugin.NextOrFailure(qname, cass.Next, ctx, w, r)
 	}
 
-	var answers []dns.RR
-	var extras []dns.RR
+	answers := make([]dns.RR, 0, 10)
+	extras := make([]dns.RR, 0, 10)
 	var err error
 
 	switch qtype {
