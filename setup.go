@@ -49,7 +49,7 @@ func parse(c *caddy.Controller) (cassandra *Cassandra, err error) {
 					if !c.NextArg() {
 						return nil, c.ArgErr()
 					}
-					cass.contactPoints = c.RemainingArgs()
+					cass.contactPoints = append([]string{c.Val()},c.RemainingArgs()...)
 				case "keyspace":
 					if !c.NextArg() {
 						return nil, c.ArgErr()
