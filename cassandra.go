@@ -111,6 +111,30 @@ func (cass *Cassandra) A(zone string, qname string) (answers, extras []dns.RR, e
 		answers = append(answers, a)
 	}
 
+	records, err = cass.fetchRecords(zone, qname, "CNAME")
+
+	for _, result := range records {
+		rec := &CNAME_Record{}
+		err := json.Unmarshal([]byte(result), rec)
+		if err != nil {
+			clog.Errorf("Unable to parse record: %s", result)
+			continue
+		}
+		if len(rec.Host) == 0 {
+			clog.Debugf("No Host found for qname ( %s ) skipping", qname)
+			continue
+		}
+		cname := new(dns.CNAME)
+		cname.Hdr = dns.RR_Header{Name: dns.Fqdn(qname), Rrtype: dns.TypeCNAME,
+			Class: dns.ClassINET, Ttl: cass.minTtl(rec.Ttl)}
+		cname.Target = rec.Host
+
+		answers = append(answers, cname)
+		additional, _, _ := cass.A(zone, cname.Target)
+		answers = append(answers, additional...)
+	}
+
+
 	return answers, extras, nil
 }
 
