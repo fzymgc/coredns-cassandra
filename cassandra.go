@@ -59,9 +59,7 @@ func (cass *Cassandra) Connect() {
 }
 
 func (cass *Cassandra) LoadZones() {
-	session := cass.session
-
-	iter := session.Query("SELECT DISTINCT zone FROM rr").Iter()
+	iter := cass.session.Query("SELECT DISTINCT zone FROM rr").Iter()
 	zones := make([]string, 0, iter.NumRows())
 	var zone string
 	for iter.Scan(&zone) {
@@ -70,7 +68,7 @@ func (cass *Cassandra) LoadZones() {
 
 	cass.LastZoneUpdate = time.Now()
 	cass.Zones = zones
-	clog.Debug("loaded zones from db")
+	clog.Debugf("loaded zones from db: %s",zones)
 }
 
 func (cass *Cassandra) Name() string { return coreDNSPackageName }
@@ -349,41 +347,6 @@ func (cass *Cassandra) fetchRecords(zone string, qname string, qtype string) (re
 	}
 
 	return records, nil
-}
-
-func (cass *Cassandra) GetRecords(zone string, host string, qtype string) ([]dns.RR, []dns.RR, error) {
-	session := cass.session
-
-	var answers []dns.RR
-	var extras []dns.RR
-
-	var records []string
-	stmt, names := qb.Select("rr").Where(
-		qb.Eq("zone"),
-		qb.Eq("name"),
-		qb.Eq("rrtype")).Columns("rdata").ToCql()
-
-	qMap := qb.M{
-		"zone":   zone,
-		"name":   host,
-		"rrtype": qtype,
-	}
-	q := gocqlx.Query(session.Query(stmt), names).BindMap(qMap)
-
-	if err := q.SelectRelease(&records); err != nil {
-		return nil, nil, err
-	}
-
-	for _, result := range records {
-		rr, err := dns.NewRR(result)
-		if err != nil {
-			log.Error(err)
-			break
-		}
-		answers = append(answers, rr)
-	}
-
-	return answers, extras, nil
 }
 
 const (

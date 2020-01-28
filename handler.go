@@ -15,7 +15,7 @@ func (cass *Cassandra) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dn
 
 	qname := state.Name()
 	qtype := state.QType()
-	clog.Infof("ServeDNS: qname=%s, qtype=%s",qname, qtype)
+	clog.Infof("ServeDNS: qname=%s, qtype=%s",qname, state.Type())
 
 	if time.Since(cass.LastZoneUpdate) > zoneUpdateTime {
 		cass.LoadZones()
