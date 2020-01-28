@@ -4,25 +4,85 @@ import (
 	"github.com/caddyserver/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
+	clog "github.com/coredns/coredns/plugin/pkg/log"
+	"github.com/gocql/gocql"
 )
 
+
+const (
+	coreDNSPackageName string = `cassandra`
+)
+
+var log = clog.NewWithPlugin(coreDNSPackageName)
+
+
+
 func init() {
-	caddy.RegisterPlugin("cassandra", caddy.Plugin{
+	caddy.RegisterPlugin(coreDNSPackageName, caddy.Plugin{
 		ServerType: "dns",
 		Action:     setup,
 	})
 }
 
 func setup(c *caddy.Controller) error {
-	// This is currently hard-coded.  Need to pull this from a configuration somwhere (Corefile; env?)
-	hosts := []string{"127.0.0.1"}
-	db := NewCassandraDatastore(hosts, "zones")
-	k := NewCassandraPlugin(db)
+
+	cass, err := parse(c)
+	if err != nil {
+		return plugin.Error(coreDNSPackageName,err)
+	}
 
 	dnsserver.GetConfig(c).AddPlugin(func(next plugin.Handler) plugin.Handler {
-		k.Next = next
-		return k
+		clog.Debug("plugin handler registered")
+		cass.Next = next
+		return cass
 	})
 
 	return nil
+}
+
+func parse(c *caddy.Controller) (cassandra *Cassandra, err error) {
+	cass := New()
+	for c.Next() {
+		if c.NextBlock() {
+			for {
+				switch c.Val() {
+				case "contact_points":
+					if !c.NextArg() {
+						return nil, c.ArgErr()
+					}
+					cass.contactPoints = append([]string{c.Val()},c.RemainingArgs()...)
+				case "keyspace":
+					if !c.NextArg() {
+						return nil, c.ArgErr()
+					}
+					cass.keyspace = c.Val()
+				case "consistency":
+					if !c.NextArg() {
+						return nil, c.ArgErr()
+					}
+					cass.consistency = gocql.ParseConsistency(c.Val())
+				case "username":
+					if !c.NextArg() {
+						return nil, c.ArgErr()
+					}
+					cass.username = c.Val()
+				case "password":
+					if !c.NextArg() {
+						return nil, c.ArgErr()
+					}
+					cass.password = c.Val()
+				default:
+					if c.Val() != "}" {
+						return nil, c.Errf("unknown property '%s'", c.Val())
+					}
+				}
+				if !c.Next() {
+					break
+				}
+			}
+		}
+	}
+	cass.Connect()
+	cass.LoadZones()
+	return cass, nil
 }
