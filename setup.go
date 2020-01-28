@@ -6,7 +6,6 @@ import (
 	"github.com/coredns/coredns/plugin"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
 	"github.com/gocql/gocql"
-	"strings"
 )
 
 
@@ -50,7 +49,7 @@ func parse(c *caddy.Controller) (cassandra *Cassandra, err error) {
 					if !c.NextArg() {
 						return nil, c.ArgErr()
 					}
-					cass.contactPoints = strings.Split(",", c.Val())
+					cass.contactPoints = c.RemainingArgs()
 				case "keyspace":
 					if !c.NextArg() {
 						return nil, c.ArgErr()
